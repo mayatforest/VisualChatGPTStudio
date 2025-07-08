@@ -91,7 +91,14 @@ namespace JeffPires.VisualChatGPTStudio.Copilot
 
             object obj = Activator.CreateInstance(generateResultType, proposalCollection, null);
 
-            ConstructorInfo obj2Constructor = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).First();
+            ConstructorInfo[] constructors = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic);
+            ConstructorInfo obj2Constructor = constructors
+                .FirstOrDefault(c =>
+                {
+                    ParameterInfo[] p = c.GetParameters();
+                    return p.Any(x => x.ParameterType.IsAssignableFrom(generateResultType)) &&
+                           p.Any(x => x.ParameterType == inlineCompletionsType);
+                }) ?? constructors.First();
 
             ParameterInfo[] parameters = obj2Constructor.GetParameters();
             object[] args = new object[parameters.Length];
@@ -100,7 +107,7 @@ namespace JeffPires.VisualChatGPTStudio.Copilot
             {
                 Type paramType = parameters[i].ParameterType;
 
-                if (paramType == generateResultType)
+                if (paramType == generateResultType || paramType.IsAssignableFrom(generateResultType))
                 {
                     args[i] = obj;
                 }
