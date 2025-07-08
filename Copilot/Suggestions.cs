@@ -93,16 +93,18 @@ namespace JeffPires.VisualChatGPTStudio.Copilot
 
             ConstructorInfo obj2Constructor = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).First();
 
-            object obj2;
+            ParameterInfo[] parameters = obj2Constructor.GetParameters();
+            object[] args = new object[parameters.Length];
 
-            if (obj2Constructor.GetParameters().Length == 2)
+            args[0] = obj;
+            args[1] = inlineCompletionsInstance;
+
+            for (int i = 2; i < parameters.Length; i++)
             {
-                obj2 = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).First().Invoke([obj, inlineCompletionsInstance]);
+                args[i] = parameters[i].HasDefaultValue ? parameters[i].DefaultValue : (parameters[i].ParameterType.IsValueType ? Activator.CreateInstance(parameters[i].ParameterType) : null);
             }
-            else
-            {
-                obj2 = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).First().Invoke([obj, inlineCompletionsInstance, 0]);
-            }
+
+            object obj2 = obj2Constructor.Invoke(args);
 
             object value2 = suggestionManagerType.GetValue(inlineCompletionsInstance);
 
