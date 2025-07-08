@@ -91,18 +91,41 @@ namespace JeffPires.VisualChatGPTStudio.Copilot
 
             object obj = Activator.CreateInstance(generateResultType, proposalCollection, null);
 
-            ConstructorInfo obj2Constructor = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).First();
+            ConstructorInfo[] constructors = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic);
+            ConstructorInfo obj2Constructor = constructors
+                .FirstOrDefault(c =>
+                {
+                    ParameterInfo[] p = c.GetParameters();
+                    return p.Any(x => x.ParameterType.IsAssignableFrom(generateResultType)) &&
+                           p.Any(x => x.ParameterType == inlineCompletionsType);
+                }) ?? constructors.First();
 
-            object obj2;
+            ParameterInfo[] parameters = obj2Constructor.GetParameters();
+            object[] args = new object[parameters.Length];
 
-            if (obj2Constructor.GetParameters().Length == 2)
+            for (int i = 0; i < parameters.Length; i++)
             {
-                obj2 = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).First().Invoke([obj, inlineCompletionsInstance]);
+                Type paramType = parameters[i].ParameterType;
+
+                if (paramType == generateResultType || paramType.IsAssignableFrom(generateResultType))
+                {
+                    args[i] = obj;
+                }
+                else if (paramType == inlineCompletionsType)
+                {
+                    args[i] = inlineCompletionsInstance;
+                }
+                else
+                {
+                    args[i] = parameters[i].HasDefaultValue
+                        ? parameters[i].DefaultValue
+                        : (paramType.IsValueType
+                            ? Activator.CreateInstance(paramType)
+                            : null);
+                }
             }
-            else
-            {
-                obj2 = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic).First().Invoke([obj, inlineCompletionsInstance, 0]);
-            }
+
+            object obj2 = obj2Constructor.Invoke(args);
 
             object value2 = suggestionManagerType.GetValue(inlineCompletionsInstance);
 
