@@ -96,23 +96,26 @@ namespace JeffPires.VisualChatGPTStudio.Copilot
             ParameterInfo[] parameters = obj2Constructor.GetParameters();
             object[] args = new object[parameters.Length];
 
-            if (parameters.Length > 0)
+            for (int i = 0; i < parameters.Length; i++)
             {
-                args[0] = obj;
-            }
+                Type paramType = parameters[i].ParameterType;
 
-            if (parameters.Length > 1)
-            {
-                args[1] = inlineCompletionsInstance;
-            }
-
-            for (int i = 2; i < parameters.Length; i++)
-            {
-                args[i] = parameters[i].HasDefaultValue
-                    ? parameters[i].DefaultValue
-                    : (parameters[i].ParameterType.IsValueType
-                        ? Activator.CreateInstance(parameters[i].ParameterType)
-                        : null);
+                if (paramType == generateResultType)
+                {
+                    args[i] = obj;
+                }
+                else if (paramType == inlineCompletionsType)
+                {
+                    args[i] = inlineCompletionsInstance;
+                }
+                else
+                {
+                    args[i] = parameters[i].HasDefaultValue
+                        ? parameters[i].DefaultValue
+                        : (paramType.IsValueType
+                            ? Activator.CreateInstance(paramType)
+                            : null);
+                }
             }
 
             object obj2 = obj2Constructor.Invoke(args);
