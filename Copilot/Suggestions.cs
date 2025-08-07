@@ -91,14 +91,10 @@ namespace JeffPires.VisualChatGPTStudio.Copilot
 
             object obj = Activator.CreateInstance(generateResultType, proposalCollection, null);
 
+            ITrackingSpan trackingSpan = textView.TextBuffer.CreateTrackingSpan(new Span(position, 0), SpanTrackingMode.EdgeInclusive);
+
             ConstructorInfo[] constructors = inlineCompletionSuggestion.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic);
-            ConstructorInfo obj2Constructor = constructors
-                .FirstOrDefault(c =>
-                {
-                    ParameterInfo[] p = c.GetParameters();
-                    return p.Any(x => x.ParameterType.IsAssignableFrom(generateResultType)) &&
-                           p.Any(x => x.ParameterType == inlineCompletionsType);
-                }) ?? constructors.First();
+            ConstructorInfo obj2Constructor = constructors.OrderByDescending(c => c.GetParameters().Length).First();
 
             ParameterInfo[] parameters = obj2Constructor.GetParameters();
             object[] args = new object[parameters.Length];
@@ -114,6 +110,10 @@ namespace JeffPires.VisualChatGPTStudio.Copilot
                 else if (paramType == inlineCompletionsType)
                 {
                     args[i] = inlineCompletionsInstance;
+                }
+                else if (paramType.IsAssignableFrom(typeof(ITrackingSpan)))
+                {
+                    args[i] = trackingSpan;
                 }
                 else
                 {
